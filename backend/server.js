@@ -13,11 +13,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-const authRoutes = require('./routes/authRoutes'); // <-- ADD THIS
+const authRoutes = require('./routes/authRoutes');
 const habitRoutes = require('./routes/habitRoutes');
 const checkmarkRoutes = require('./routes/checkmarkRoutes');
 
-app.use('/api/auth', authRoutes); // <-- ADD THIS
+app.use('/api/auth', authRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/checkmarks', checkmarkRoutes);
 
@@ -25,6 +25,15 @@ app.use('/api/checkmarks', checkmarkRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Habit Tracker API is running' });
 });
+
+// Serve frontend
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static('frontend/build'));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'));
+  });
+}
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/habit-tracker';

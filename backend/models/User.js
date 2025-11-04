@@ -1,72 +1,34 @@
-const express = require('express');
-const router = express.Router();
+// models/User.js
+
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
-// POST /api/auth/register
-router.post('/register', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Please provide username and password' });
-    }
-
-    let user = await User.findOne({ username });
-    if (user) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-
-    user = new User({ username, password });
-    await user.save();
-
-    res.status(201).json({ message: 'User registered successfully' });
-
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+const UserSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
 });
 
-// POST /api/auth/login
-router.post('/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Please provide username and password' });
-    }
-
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Create and send token
-    const payload = {
-      user: {
-        id: user._id
-      }
-    };
-
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }, // Token expires in 1 hour
-      (err, token) => {
-        if (err) throw err;
-        res.json({ token });
-      }
-    );
-
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+// This automatically hashes the password before saving
+UserSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) {
+    return next();
   }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
-module.exports = router;
+// This adds the comparePassword method used in your login route
+UserSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// This exports the compiled model, which has functions like .findOne()
+module.exports = mongoose.model('User', UserSchema);

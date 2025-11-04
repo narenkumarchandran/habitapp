@@ -1,41 +1,46 @@
-import React, { useState } from 'react';
-import './App.css';
-import Auth from './components/Auth.jsx';
-import HabitList from './components/HabitList.jsx';
+import { useState, useContext } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthContext } from "./context/AuthContext";
+import { HabitContext } from "./context/HabitContext";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import HabitsSection from "./components/HabitsSection";
+import HeaderSection from "./components/HeaderSection";
+import StatsSection from "./components/StatsSection";
+import AddHabitModal from "./components/AddHabitModal";
 
-function App() {
-  const [token, setToken] = useState(localStorage.getItem('token'));
+const App = () => {
+    const { token } = useContext(AuthContext);
 
-  const handleSetToken = (newToken) => {
-    setToken(newToken);
-    if (newToken) {
-      localStorage.setItem('token', newToken);
-    } else {
-      localStorage.removeItem('token');
-    }
-  };
+    return (
+        <Router>
+            <Routes>
+                <Route path="/login" element={!token ? <Login /> : <Navigate to="/" />} />
+                <Route path="/signup" element={!token ? <Signup /> : <Navigate to="/" />} />
+                <Route path="/" element={token ? <MainApp /> : <Navigate to="/login" />} />
+            </Routes>
+        </Router>
+    );
+};
 
-  const handleLogout = () => {
-    handleSetToken(null);
-  };
+const MainApp = () => {
+    const [addModalOpen, setAddModalOpen] = useState(false);
+    const { addHabit } = useContext(HabitContext);
 
-  return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Habit Tracker</h1>
-      </header>
-      <main>
-        {token ? (
-          <div>
-            <button onClick={handleLogout}>Logout</button>
-            <HabitList token={token} />
-          </div>
-        ) : (
-          <Auth setToken={handleSetToken} />
-        )}
-      </main>
-    </div>
-  );
-}
+    return (
+        <div className="min-h-screen bg-slate-900">
+            <main className="container mx-auto max-w-5xl py-12 px-4">
+                <HeaderSection setAddModalOpen={setAddModalOpen} />
+                <StatsSection />
+                <HabitsSection />
+                <AddHabitModal
+                    addModalOpen={addModalOpen}
+                    setAddModalOpen={setAddModalOpen}
+                    addHabit={addHabit}
+                />
+            </main>
+        </div>
+    );
+};
 
 export default App;

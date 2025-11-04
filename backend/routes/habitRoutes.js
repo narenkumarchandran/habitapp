@@ -2,17 +2,18 @@ const express = require('express');
 const router = express.Router();
 const Habit = require('../models/Habit');
 const Checkmark = require('../models/Checkmark');
-const auth = require('../middleware/auth'); // <-- ADD THIS
+const auth = require('../middleware/auth');
 
 // Protect all routes in this file
-router.use(auth); // <-- ADD THIS
+router.use(auth);
 
 // GET all habits for the logged-in user
 router.get('/', async (req, res) => {
   try {
-    // Find only habits belonging to the user
-    const habits = await Habit.find({ userId: req.user.id })
-                             .sort({ createdAt: -1 });
+    const habits = await Habit.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    for (const habit of habits) {
+      await habit.calculateStreak();
+    }
     res.json(habits);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -22,7 +23,6 @@ router.get('/', async (req, res) => {
 // GET a single habit
 router.get('/:id', async (req, res) => {
   try {
-    // Find the habit by ID *and* userId
     const habit = await Habit.findOne({ 
       _id: req.params.id, 
       userId: req.user.id 
@@ -32,8 +32,7 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Habit not found or not authorized' });
     }
     
-    // You might want to calculate streak here if needed
-    // await habit.calculateStreak(); 
+    await habit.calculateStreak(); 
     
     res.json(habit);
   } catch (error) {
@@ -52,7 +51,7 @@ router.post('/', async (req, res) => {
       color,
       icon,
       frequency,
-      userId: req.user.id // <-- Set the userId
+      userId: req.user.id
     });
     
     const savedHabit = await newHabit.save();
@@ -65,7 +64,6 @@ router.post('/', async (req, res) => {
 // PUT update a habit
 router.put('/:id', async (req, res) => {
   try {
-    // Find and update by ID and userId
     const habit = await Habit.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.id },
       req.body,
@@ -85,7 +83,6 @@ router.put('/:id', async (req, res) => {
 // DELETE a habit
 router.delete('/:id', async (req, res) => {
   try {
-    // Find and delete by ID and userId
     const habit = await Habit.findOneAndDelete({ 
       _id: req.params.id, 
       userId: req.user.id 
@@ -95,7 +92,6 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Habit not found or not authorized' });
     }
     
-    // Also delete associated checkmarks
     await Checkmark.deleteMany({ habitId: req.params.id });
     
     res.json({ message: 'Habit and associated checkmarks deleted' });

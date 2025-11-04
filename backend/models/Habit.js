@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const habitSchema = new mongoose.Schema({
-  userId: { 
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
@@ -50,14 +50,13 @@ const habitSchema = new mongoose.Schema({
   archived: {
     type: Boolean,
     default: false
+  },
+  streak: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
-});
-
-// Virtual for current streak
-habitSchema.virtual('currentStreak').get(function() {
-  return this._currentStreak || 0;
 });
 
 // Method to calculate streak
@@ -69,25 +68,48 @@ habitSchema.methods.calculateStreak = async function() {
   }).sort({ date: -1 });
 
   let streak = 0;
+  if (checkmarks.length === 0) {
+    this.streak = 0;
+    await this.save();
+    return 0;
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  for (let i = 0; i < checkmarks.length; i++) {
-    const checkDate = new Date(checkmarks[i].date);
-    checkDate.setHours(0, 0, 0, 0);
-    
-    const expectedDate = new Date(today);
-    expectedDate.setDate(expectedDate.getDate() - i);
-    expectedDate.setHours(0, 0, 0, 0);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(0, 0, 0, 0);
 
-    if (checkDate.getTime() === expectedDate.getTime()) {
+  const mostRecentCheckmarkDate = new Date(checkmarks[0].date);
+  mostRecentCheckmarkDate.setHours(0, 0, 0, 0);
+
+  if (mostRecentCheckmarkDate.getTime() !== today.getTime() && mostRecentCheckmarkDate.getTime() !== yesterday.getTime()) {
+    this.streak = 0;
+    await this.save();
+    return 0;
+  }
+
+  streak = 1;
+  let lastDate = mostRecentCheckmarkDate;
+
+  for (let i = 1; i < checkmarks.length; i++) {
+    const currentDate = new Date(checkmarks[i].date);
+    currentDate.setHours(0, 0, 0, 0);
+
+    const expectedDate = new Date(lastDate);
+    expectedDate.setDate(expectedDate.getDate() - 1);
+
+    if (currentDate.getTime() === expectedDate.getTime()) {
       streak++;
+      lastDate = currentDate;
     } else {
       break;
     }
   }
 
-  this._currentStreak = streak;
+  this.streak = streak;
+  await this.save();
   return streak;
 };
 
