@@ -1,0 +1,28 @@
+.habit-form {
+  margin-bottom: 20px;
+}
+
+.habit-form h3 {
+  margin-bottom: 10px;
+}
+
+.habit-form div {
+  margin-bottom: 10px;
+}
+
+.habit-form label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.habit-form input,
+.habit-form textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.habit-form button {
+  margin-right: 10px;
+}

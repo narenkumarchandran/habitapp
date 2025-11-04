@@ -1,0 +1,14 @@
+.habit-list-container {
+  width: 500px;
+  margin: 0 auto;
+}
+
+.habit-list-container h3 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.habit-list {
+  list-style-type: none;
+  padding: 0;
+}
